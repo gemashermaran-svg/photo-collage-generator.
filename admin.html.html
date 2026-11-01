@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZAO Official - Admin Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gold: { DEFAULT: '#D4AF37', light: '#F3E5AB', dark: '#AA7C11' },
+                        brand: { black: '#070708', dark: '#0D0D10', card: '#141418', border: '#262630' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #070708; color: #F3F4F6; }
+        .gold-border-glow:focus { box-shadow: 0 0 15px rgba(212, 175, 55, 0.35); border-color: #D4AF37; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <!-- LOCK SCREEN SCREEN (Appears first) -->
+    <div id="admin-lockscreen" class="fixed inset-0 z-50 bg-brand-black flex items-center justify-center p-4">
+        <div class="bg-brand-card border border-brand-border w-full max-w-md rounded-2xl p-6 relative shadow-2xl text-center space-y-6">
+            <div class="w-16 h-16 rounded-2xl bg-gold/10 text-gold border border-gold/30 mx-auto flex items-center justify-center text-2xl">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-extrabold text-white uppercase tracking-wider">ZAO Admin Portal</h2>
+                <p class="text-xs text-gray-400 mt-1">Masukkan kata sandi untuk mengakses kontrol penuh toko.</p>
+            </div>
+
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <input type="password" id="admin-password" placeholder="Password Admin..." required class="w-full bg-brand-black border border-brand-border text-sm rounded-xl px-4 py-3 text-white focus:outline-none gold-border-glow">
+                <p class="text-[10px] text-gold/80">* Password Bawaan: <code class="bg-brand-black px-1.5 py-0.5 rounded border border-brand-border font-bold">admin123</code></p>
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-gold text-black font-extrabold text-xs uppercase tracking-wider hover:bg-gold-light transition-all shadow-lg shadow-gold/20">
+                    Masuk Ke Portal Admin
+                </button>
+            </form>
+            <a href="index.html" class="inline-block text-xs text-gray-500 hover:text-gray-300">Kembali Ke Toko Pengunjung</a>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD (Hidden until authenticated) -->
+    <div id="admin-dashboard" class="hidden flex-grow">
+        <!-- Header Nav -->
+        <header class="border-b border-brand-border bg-brand-card py-4">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded bg-gold text-black font-black flex items-center justify-center text-lg">Z</div>
+                    <span class="text-base font-extrabold text-white tracking-widest uppercase">ZAO Control Panel</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="index.html" target="_blank" class="px-4 py-2 rounded-xl bg-brand-black border border-brand-border text-gold font-bold text-xs uppercase hover:border-gold transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-eye"></i> Lihat Toko
+                    </a>
+                    <button onclick="logout()" class="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/30 font-bold text-xs uppercase hover:bg-red-500 hover:text-white transition-all">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            <!-- Stat Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div class="p-5 rounded-2xl bg-brand-card border border-brand-border flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 font-medium">Total Produk</p>
+                        <h4 class="text-2xl font-black text-white mt-1" id="stat-total">0</h4>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-gold/10 text-gold flex items-center justify-center text-lg"><i class="fa-solid fa-box"></i></div>
+                </div>
+                <div class="p-5 rounded-2xl bg-brand-card border border-brand-border flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 font-medium">Tersedia (In Stock)</p>
+                        <h4 class="text-2xl font-black text-emerald-400 mt-1" id="stat-instock">0</h4>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg"><i class="fa-solid fa-circle-check"></i></div>
+                </div>
+                <div class="p-5 rounded-2xl bg-brand-card border border-brand-border flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-400 font-medium">Stok Habis (Out of Stock)</p>
+                        <h4 class="text-2xl font-black text-red-400 mt-1" id="stat-outstock">0</h4>
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center text-lg"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                </div>
+            </div>
+
+            <!-- Upload / Add Form -->
+            <div class="bg-brand-card border border-brand-border rounded-2xl p-6">
+                <div class="flex items-center gap-3 mb-6 pb-4 border-b border-brand-border">
+                    <div class="p-2.5 rounded-xl bg-gold/10 text-gold border border-gold/30">
+                        <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white uppercase tracking-wider" id="form-title">Upload Produk Baru</h3>
+                        <p class="text-xs text-gray-400">Tambahkan barang ke katalog toko ZAO.</p>
+                    </div>
+                </div>
+
+                <form onsubmit="saveProduct(event)" class="space-y-4">
+                    <input type="hidden" id="prod-id">
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-300 mb-1">Nama Produk *</label>
+                        <input type="text" id="prod-name" required placeholder="Contoh: ZAO Phantom Hoodie" class="w-full bg-brand-black border border-brand-border text-xs rounded-xl px-4 py-2.5 text-white focus:outline-none gold-border-glow">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-gray-300 mb-1">Kategori *</label>
+                            <select id="prod-category" required class="w-full bg-brand-black border border-brand-border text-xs rounded-xl px-3 py-2.5 text-white focus:outline-none gold-border-glow">
+                                <option value="Outerwear">Outerwear</option>
+                                <option value="T-Shirt">T-Shirt</option>
+                                <option value="Pants">Pants</option>
+                                <option value="Accessories">Accessories</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-gray-300 mb-1">Harga (Rp) *</label>
+                            <input type="number" id="prod-price" required min="1000" placeholder="899000" class="w-full bg-brand-black border border-brand-border text-xs rounded-xl px-4 py-2.5 text-white focus:outline-none gold-border-glow">
+                        </div>
+                    </div>
+
+                    <!-- Image Upload Section -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-semibold uppercase text-gray-300">Unggah Gambar Produk *</label>
+                        <div class="border-2 border-dashed border-brand-border rounded-xl p-3 text-center bg-brand-black hover:border-gold transition-colors cursor-pointer relative" onclick="document.getElementById('file-input').click()">
+                            <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                            <div id="upload-preview" class="flex flex-col items-center justify-center gap-1">
+                                <i class="fa-solid fa-cloud-arrow-up text-xl text-gold"></i>
+                                <span class="text-xs text-gray-300 font-medium">Klik untuk Pilih Gambar Lokal</span>
+                                <span class="text-[10px] text-gray-500">JPG, PNG, WEBP (Max 5MB)</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="text-[10px] text-gray-400 block mb-1 uppercase font-semibold">Atau Tempel URL Gambar:</span>
+                            <input type="url" id="prod-url" oninput="handleUrlInput()" placeholder="https://..." class="w-full bg-brand-black border border-brand-border text-xs rounded-xl px-4 py-2 text-white focus:outline-none gold-border-glow">
+                        </div>
+
+                        <div>
+                            <span class="text-[10px] text-gray-400 block mb-1 uppercase font-semibold">Preset Gambar Cepat:</span>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" onclick="usePreset('hoodie')" class="px-2.5 py-1 rounded-lg bg-brand-black border border-brand-border hover:border-gold text-[10px] text-gray-300">Hoodie</button>
+                                <button type="button" onclick="usePreset('tee')" class="px-2.5 py-1 rounded-lg bg-brand-black border border-brand-border hover:border-gold text-[10px] text-gray-300">T-Shirt</button>
+                                <button type="button" onclick="usePreset('jacket')" class="px-2.5 py-1 rounded-lg bg-brand-black border border-brand-border hover:border-gold text-[10px] text-gray-300">Jacket</button>
+                                <button type="button" onclick="usePreset('sneakers')" class="px-2.5 py-1 rounded-lg bg-brand-black border border-brand-border hover:border-gold text-[10px] text-gray-300">Sneakers</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-300 mb-1">Status Stok</label>
+                        <select id="prod-stock" class="w-full bg-brand-black border border-brand-border text-xs rounded-xl px-3 py-2.5 text-white focus:outline-none gold-border-glow">
+                            <option value="true">In Stock (Tersedia)</option>
+                            <option value="false">Out of Stock (Habis)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-300 mb-1">Deskripsi Produk *</label>
+                        <textarea id="prod-desc" required rows="3" placeholder="Deskripsi detail..." class="w-full bg-brand-black border border-brand-border text-xs rounded-xl px-4 py-2.5 text-white focus:outline-none gold-border-glow"></textarea>
+                    </div>
+
+                    <div class="pt-2 flex gap-3">
+                        <button type="button" onclick="resetForm()" class="w-1/2 py-3 rounded-xl border border-brand-border text-gray-400 font-semibold text-xs uppercase hover:bg-brand-black transition-all">
+                            Batal / Reset
+                        </button>
+                        <button type="submit" class="w-1/2 py-3 rounded-xl bg-gold text-black font-extrabold text-xs uppercase tracking-wider hover:bg-gold-light transition-all shadow-lg shadow-gold/20">
+                            Simpan Produk
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Products Table -->
+            <div class="bg-brand-card border border-brand-border rounded-2xl overflow-hidden">
+                <div class="p-5 border-b border-brand-border flex items-center justify-between">
+                    <h3 class="font-bold text-white uppercase text-sm tracking-wider">Inventaris Produk ZAO</h3>
+                    <button onclick="resetAllData()" class="text-xs text-red-400 hover:underline font-semibold">
+                        <i class="fa-solid fa-rotate-left"></i> Reset Seluruh Data
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-brand-black text-gray-400 uppercase font-bold border-b border-brand-border">
+                            <tr>
+                                <th class="p-4">Produk</th>
+                                <th class="p-4">Kategori</th>
+                                <th class="p-4">Harga</th>
+                                <th class="p-4">Stok Status</th>
+                                <th class="p-4 text-center">Aksi Admin</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body" class="divide-y divide-brand-border"></tbody>
+                    </table>
+                </div>
+
+                <div id="table-empty" class="p-12 text-center text-gray-500 hidden">
+                    <i class="fa-solid fa-inbox text-3xl mb-2"></i>
+                    <p class="text-xs uppercase font-bold">Belum Ada Produk</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let products = [];
+        let base64Image = '';
+        const PRESETS = {
+            hoodie: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800&auto=format&fit=crop&q=80",
+            tee: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80",
+            jacket: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&auto=format&fit=crop&q=80",
+            sneakers: "https://images.unsplash.com/photo-1552346154-21d32810aba3?w=800&auto=format&fit=crop&q=80"
+        };
+
+        window.onload = function() {
+            if (sessionStorage.getItem('zao_admin_auth') === 'true') {
+                showDashboard();
+            }
+        };
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('admin-password').value;
+            if (pass === 'admin123') {
+                sessionStorage.setItem('zao_admin_auth', 'true');
+                showDashboard();
+                showToast("Login Admin Berhasil!", "success");
+            } else {
+                showToast("Password Admin Salah!", "error");
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('zao_admin_auth');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            document.getElementById('admin-lockscreen').classList.remove('hidden');
+        }
+
+        function showDashboard() {
+            document.getElementById('admin-lockscreen').classList.add('hidden');
+            document.getElementById('admin-dashboard').classList.remove('hidden');
+            loadProducts();
+            renderTable();
+        }
+
+        function loadProducts() {
+            const data = localStorage.getItem('zao_products');
+            products = data ? JSON.parse(data) : [];
+        }
+
+        function saveProducts() {
+            localStorage.setItem('zao_products', JSON.stringify(products));
+        }
+
+        function renderTable() {
+            loadProducts();
+            document.getElementById('stat-total').innerText = products.length;
+            document.getElementById('stat-instock').innerText = products.filter(p => p.inStock).length;
+            document.getElementById('stat-outstock').innerText = products.filter(p => !p.inStock).length;
+
+            const tbody = document.getElementById('table-body');
+            const empty = document.getElementById('table-empty');
+
+            if (products.length === 0) {
+                tbody.innerHTML = '';
+                empty.classList.remove('hidden');
+            } else {
+                empty.classList.add('hidden');
+                tbody.innerHTML = products.map(p => `
+                    <tr class="hover:bg-brand-black/50">
+                        <td class="p-4">
+                            <div class="flex items-center gap-3">
+                                <img src="${escapeHtml(p.image)}" class="w-12 h-12 object-cover rounded-xl border border-brand-border bg-brand-black" onerror="this.src='https://placehold.co/100x100/141418/D4AF37?text=ZAO'">
+                                <div>
+                                    <p class="font-bold text-white uppercase text-xs">${escapeHtml(p.name)}</p>
+                                    <p class="text-[10px] text-gray-500 line-clamp-1">${escapeHtml(p.description)}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-4">
+                            <span class="px-2 py-1 rounded bg-brand-black border border-brand-border text-gray-300 text-[10px] font-semibold">${escapeHtml(p.category)}</span>
+                        </td>
+                        <td class="p-4 font-bold text-white">Rp ${new Intl.NumberFormat('id-ID').format(p.price)}</td>
+                        <td class="p-4">
+                            <button onclick="toggleStock(${p.id})" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${p.inStock ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/10 text-red-400 border border-red-500/30'}">
+                                ${p.inStock ? 'In Stock' : 'Out of Stock'}
+                            </button>
+                        </td>
+                        <td class="p-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="editProduct(${p.id})" class="px-3 py-1.5 rounded-lg bg-brand-black hover:bg-gold hover:text-black border border-brand-border text-gray-300 font-bold text-[10px]">
+                                    <i class="fa-solid fa-pen"></i> Edit
+                                </button>
+                                <button onclick="deleteProduct(${p.id})" class="px-3 py-1.5 rounded-lg bg-brand-black hover:bg-red-500 hover:text-white border border-brand-border text-red-400 font-bold text-[10px]">
+                                    <i class="fa-solid fa-trash"></i> Hapus
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    base64Image = evt.target.result;
+                    document.getElementById('prod-url').value = '';
+                    document.getElementById('upload-preview').innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <img src="${base64Image}" class="w-10 h-10 object-cover rounded-lg border border-gold">
+                            <span class="text-xs text-gold font-bold">Gambar Terpilih!</span>
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleUrlInput() {
+            base64Image = '';
+            resetUploadPreview();
+        }
+
+        function usePreset(key) {
+            if (PRESETS[key]) {
+                document.getElementById('prod-url').value = PRESETS[key];
+                base64Image = '';
+                resetUploadPreview();
+            }
+        }
+
+        function resetUploadPreview() {
+            document.getElementById('upload-preview').innerHTML = `
+                <i class="fa-solid fa-cloud-arrow-up text-xl text-gold"></i>
+                <span class="text-xs text-gray-300 font-medium">Klik untuk Pilih Gambar Lokal</span>
+                <span class="text-[10px] text-gray-500">JPG, PNG, WEBP (Max 5MB)</span>
+            `;
+        }
+
+        function saveProduct(e) {
+            e.preventDefault();
+            const id = document.getElementById('prod-id').value;
+            const name = document.getElementById('prod-name').value.trim();
+            const category = document.getElementById('prod-category').value;
+            const price = parseFloat(document.getElementById('prod-price').value);
+            const inStock = document.getElementById('prod-stock').value === "true";
+            const description = document.getElementById('prod-desc').value.trim();
+
+            let image = base64Image || document.getElementById('prod-url').value.trim();
+            if (!image) image = PRESETS.hoodie;
+
+            if (id) {
+                const idx = products.findIndex(p => p.id === parseInt(id));
+                if (idx !== -1) {
+                    products[idx] = { id: parseInt(id), name, category, price, image, inStock, description };
+                    showToast("Produk diperbarui!", "success");
+                }
+            } else {
+                products.unshift({ id: Date.now(), name, category, price, image, inStock, description });
+                showToast("Produk baru diunggah!", "success");
+            }
+
+            saveProducts();
+            renderTable();
+            resetForm();
+        }
+
+        function editProduct(id) {
+            const p = products.find(item => item.id === id);
+            if (!p) return;
+
+            document.getElementById('form-title').innerText = "Edit Produk";
+            document.getElementById('prod-id').value = p.id;
+            document.getElementById('prod-name').value = p.name;
+            document.getElementById('prod-category').value = p.category;
+            document.getElementById('prod-price').value = p.price;
+            document.getElementById('prod-stock').value = p.inStock ? "true" : "false";
+            document.getElementById('prod-desc').value = p.description;
+
+            if (p.image.startsWith('data:')) {
+                base64Image = p.image;
+                document.getElementById('prod-url').value = '';
+                document.getElementById('upload-preview').innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <img src="${base64Image}" class="w-10 h-10 object-cover rounded-lg border border-gold">
+                        <span class="text-xs text-gold font-bold">Gambar Terpasang</span>
+                    </div>
+                `;
+            } else {
+                base64Image = '';
+                document.getElementById('prod-url').value = p.image;
+                resetUploadPreview();
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function toggleStock(id) {
+            const p = products.find(item => item.id === id);
+            if (p) {
+                p.inStock = !p.inStock;
+                saveProducts();
+                renderTable();
+                showToast(`Stok ${p.name} diperbarui`, "info");
+            }
+        }
+
+        function deleteProduct(id) {
+            if (confirm("Hapus produk ini secara permanen?")) {
+                products = products.filter(p => p.id !== id);
+                saveProducts();
+                renderTable();
+                showToast("Produk telah dihapus.", "info");
+            }
+        }
+
+        function resetAllData() {
+            if (confirm("Hapus SELURUH data produk di toko ZAO?")) {
+                products = [];
+                saveProducts();
+                renderTable();
+                showToast("Seluruh katalog telah dibersihkan.", "info");
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('form-title').innerText = "Upload Produk Baru";
+            document.getElementById('prod-id').value = "";
+            document.getElementById('prod-name').value = "";
+            document.getElementById('prod-category').value = "Outerwear";
+            document.getElementById('prod-price').value = "";
+            document.getElementById('prod-url').value = "";
+            document.getElementById('prod-stock').value = "true";
+            document.getElementById('prod-desc').value = "";
+            base64Image = '';
+            resetUploadPreview();
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function showToast(msg, type = "info") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            let bg = type === "success" ? "bg-brand-card border-gold text-gold" : "bg-brand-card border-red-500 text-red-400";
+            toast.className = `p-4 rounded-xl border text-xs font-semibold shadow-xl flex items-center gap-2 ${bg}`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${escapeHtml(msg)}`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
